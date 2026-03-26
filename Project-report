@@ -1,0 +1,100 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Create sample dataset
+data = {
+    'budget': [50000000, 200000000, 15000000, 100000000, 75000000,
+               120000000, 80000000, 25000000, 180000000, 45000000],
+    'runtime': [120, 148, 95, 135, 112, 125, 110, 105, 150, 98],
+    'genre': ['Action', 'Drama', 'Comedy', 'Sci-Fi', 'Action',
+              'Drama', 'Comedy', 'Action', 'Sci-Fi', 'Comedy'],
+    'lead_actor_rating': [8.5, 9.0, 7.2, 8.8, 7.5, 8.2, 7.8, 8.9, 9.1, 7.0],
+    'release_year': [2020, 2021, 2019, 2022, 2020, 2021, 2020, 2022, 2021, 2019],
+    'rating': [7.8, 8.9, 6.5, 8.2, 7.1, 8.0, 7.3, 8.5, 9.0, 6.8]
+}
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+print("Dataset:")
+print(df)
+print("\n" + "="*50 + "\n")
+
+# Encode categorical variables
+le = LabelEncoder()
+df['genre_encoded'] = le.fit_transform(df['genre'])
+
+# Select features
+features = ['budget', 'runtime', 'genre_encoded', 'lead_actor_rating', 'release_year']
+X = df[features]
+y = df['rating']
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Scale features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Train Random Forest model
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X_train_scaled, y_train)
+
+# Make predictions
+y_pred = model.predict(X_test_scaled)
+
+# Evaluate
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("Model Performance:")
+print(f"Mean Squared Error: {mse:.2f}")
+print(f"R² Score: {r2:.2f}")
+print("\n" + "="*50 + "\n")
+
+# Feature importance
+feature_importance = pd.DataFrame({
+    'feature': features,
+    'importance': model.feature_importances_
+}).sort_values('importance', ascending=False)
+
+print("Feature Importance:")
+print(feature_importance)
+print("\n" + "="*50 + "\n")
+
+# Make a prediction for a new movie
+new_movie = pd.DataFrame({
+    'budget': [90000000],
+    'runtime': [115],
+    'genre': ['Action'],
+    'lead_actor_rating': [8.3],
+    'release_year': [2023]
+})
+
+# Encode the genre
+new_movie['genre_encoded'] = le.transform(new_movie['genre'])
+
+# Scale the features
+new_movie_scaled = scaler.transform(new_movie[features])
+
+# Predict
+predicted_rating = model.predict(new_movie_scaled)
+print(f"Predicted rating for new movie: {predicted_rating[0]:.2f}/10")
+print("\n" + "="*50 + "\n")
+
+# Visualization (will show plot if matplotlib is installed and not in headless environment)
+try:
+    plt.figure(figsize=(8, 5))
+    sns.barplot(data=feature_importance, x='importance', y='feature')
+    plt.title('Feature Importance for Movie Rating Prediction')
+    plt.xlabel('Importance')
+    plt.tight_layout()
+    plt.show()
+except Exception as e:
+    print(f"Visualization skipped: {e}")
